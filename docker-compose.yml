@@ -1,0 +1,41 @@
+# Verdict production-grade stack.
+# Browser must reach orchestrator at http://localhost:8001 (mapped port).
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  fastapi_orchestrator:
+    build:
+      context: ./services/orchestrator
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      REDIS_URL: redis://redis:6379
+      MCP_GATEWAY_URL: http://mcp_gateway:9001/v1/tools/invoke
+      CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      - redis
+      - mcp_gateway
+
+  mcp_gateway:
+    build:
+      context: ./services/mcp_gateway
+      dockerfile: Dockerfile
+    ports:
+      - "9001:9001"
+
+  next_host:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_ORCHESTRATOR_BASE_URL: http://localhost:8001
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_ORCHESTRATOR_BASE_URL: http://localhost:8001
+    depends_on:
+      - fastapi_orchestrator

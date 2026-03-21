@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://Verdict.dev/contracts/agui-events.schema.json",
+  "title": "AGUIEvents",
+  "oneOf": [
+    { "$ref": "#/$defs/textMessageEvent" },
+    { "$ref": "#/$defs/toolCallStartEvent" },
+    { "$ref": "#/$defs/stateDeltaEvent" },
+    { "$ref": "#/$defs/interruptEvent" }
+  ],
+  "$defs": {
+    "eventBase": {
+      "type": "object",
+      "required": ["eventId", "traceId", "timestamp", "eventType", "payload"],
+      "properties": {
+        "eventId": { "type": "string", "minLength": 1 },
+        "traceId": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "textMessagePayload": {
+      "type": "object",
+      "required": ["role", "content"],
+      "properties": {
+        "role": { "type": "string", "enum": ["system", "assistant", "user", "tool"] },
+        "content": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "toolCallStartPayload": {
+      "type": "object",
+      "required": ["toolName", "callId", "arguments"],
+      "properties": {
+        "toolName": { "type": "string", "minLength": 1 },
+        "callId": { "type": "string", "minLength": 1 },
+        "arguments": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "stateDeltaPayload": {
+      "type": "object",
+      "required": ["path", "op", "value"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "op": { "type": "string", "enum": ["replace", "append", "merge"] },
+        "value": {}
+      },
+      "additionalProperties": false
+    },
+    "interruptPayload": {
+      "type": "object",
+      "required": ["approvalId", "reason", "requestedAction"],
+      "properties": {
+        "approvalId": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "requestedAction": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "textMessageEvent": {
+      "allOf": [
+        { "$ref": "#/$defs/eventBase" },
+        {
+          "type": "object",
+          "properties": {
+            "eventType": { "const": "TEXT_MESSAGE_CONTENT" },
+            "payload": { "$ref": "#/$defs/textMessagePayload" }
+          }
+        }
+      ]
+    },
+    "toolCallStartEvent": {
+      "allOf": [
+        { "$ref": "#/$defs/eventBase" },
+        {
+          "type": "object",
+          "properties": {
+            "eventType": { "const": "TOOL_CALL_START" },
+            "payload": { "$ref": "#/$defs/toolCallStartPayload" }
+          }
+        }
+      ]
+    },
+    "stateDeltaEvent": {
+      "allOf": [
+        { "$ref": "#/$defs/eventBase" },
+        {
+          "type": "object",
+          "properties": {
+            "eventType": { "const": "STATE_DELTA" },
+            "payload": { "$ref": "#/$defs/stateDeltaPayload" }
+          }
+        }
+      ]
+    },
+    "interruptEvent": {
+      "allOf": [
+        { "$ref": "#/$defs/eventBase" },
+        {
+          "type": "object",
+          "properties": {
+            "eventType": { "const": "INTERRUPT" },
+            "payload": { "$ref": "#/$defs/interruptPayload" }
+          }
+        }
+      ]
+    }
+  }
+}
