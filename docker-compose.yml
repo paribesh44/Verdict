@@ -16,9 +16,16 @@ services:
       REDIS_URL: redis://redis:6379
       MCP_GATEWAY_URL: http://mcp_gateway:9001/v1/tools/invoke
       CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      OLLAMA_BASE_URL: http://ollama:11434
     depends_on:
       - redis
       - mcp_gateway
+      - ollama
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 2 && ollama pull llama3.2 && wait"]
 
   mcp_gateway:
     build:
@@ -26,6 +33,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "9001:9001"
+    environment:
+      - FIRECRAWL_API_KEY
 
   next_host:
     build:
