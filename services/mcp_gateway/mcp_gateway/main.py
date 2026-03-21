@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Set
 
 from dotenv import load_dotenv
 
-
 import httpx
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,8 +14,12 @@ from pydantic import BaseModel, ConfigDict, Field
 _env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 load_dotenv(_env_path)
 
-SUPPORTED_TOOLS: Set[str] = {"firecrawl.agent.search"}
-ALLOWED_INTENTS: Dict[str, Set[str]] = {"firecrawl.agent.search": {"research_navigation"}}
+# 1. FIX: Added firecrawl.extract to the allowed tools and intents
+SUPPORTED_TOOLS: Set[str] = {"firecrawl.agent.search", "firecrawl.extract"}
+ALLOWED_INTENTS: Dict[str, Set[str]] = {
+    "firecrawl.agent.search": {"research_navigation"},
+    "firecrawl.extract": {"research_extraction"}
+}
 
 app = FastAPI(title="Verdict MCP Gateway", version="0.1.0")
 
@@ -137,6 +140,50 @@ async def _firecrawl_search(query: str, depth: int) -> Dict[str, Any]:
     }
 
 
+# 2. FIX: New function to handle deep extraction of the actual URLs
+async def _firecrawl_extract(urls: List[str], prompt: str) -> Dict[str, Any]:
+    api_key = os.getenv("FIRECRAWL_API_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="FIRECRAWL_API_KEY is not configured on the MCP gateway.",
+        )
+
+    base_url = os.getenv("FIRECRAWL_BASE_URL", "https://api.firecrawl.dev").strip().rstrip("/")
+    # Extractions take longer than simple searches, increasing timeout slightly
+    timeout_seconds = float(os.getenv("FIRECRAWL_TIMEOUT_SECONDS", "45")) 
+
+    payload = {
+        "urls": urls,
+        "prompt": prompt
+    }
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+            response = await client.post(f"{base_url}/v1/extract", json=payload, headers=headers)
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        message = exc.response.text[:500]
+        raise HTTPException(
+            status_code=502,
+            detail=f"Firecrawl extract failed with status {exc.response.status_code}: {message}",
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Firecrawl transport error: {exc}") from exc
+
+    try:
+        raw_payload = response.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Firecrawl returned non-JSON response.")
+
+    return {
+        "provider": "firecrawl",
+        "data": raw_payload.get("data", []),
+        "raw": raw_payload,
+    }
+
+
 @app.get("/health")
 def health() -> Dict[str, Any]:
     return {
@@ -164,6 +211,7 @@ async def invoke_tool(
             detail=f"Intent '{request.intent}' is not allowed for tool '{request.tool_name}'.",
         )
 
+    # Dispatch to Search
     if request.tool_name == "firecrawl.agent.search":
         query = str(request.input.get("query", "")).strip()
         if not query:
@@ -171,6 +219,16 @@ async def invoke_tool(
 
         depth = _bounded_int(request.input.get("depth"), default=2, minimum=1, maximum=5)
         data = await _firecrawl_search(query=query, depth=depth)
+        return {"ok": True, "data": data}
+
+    # 3. FIX: Dispatch to Extract
+    if request.tool_name == "firecrawl.extract":
+        urls = request.input.get("urls", [])
+        prompt = str(request.input.get("prompt", "")).strip()
+        if not urls or not isinstance(urls, list):
+             raise HTTPException(status_code=400, detail="input.urls must be a valid list of strings.")
+
+        data = await _firecrawl_extract(urls=urls, prompt=prompt)
         return {"ok": True, "data": data}
 
     raise HTTPException(status_code=500, detail="Tool dispatch failed unexpectedly.")

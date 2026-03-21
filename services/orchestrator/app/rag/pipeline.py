@@ -28,30 +28,40 @@ def _get_extraction_llm():
     """LLM for structured claim extraction. Prefer Anthropic then OpenAI."""
     if not _LLM_AVAILABLE:
         return None
+    
+    # We set max_tokens to 2048 to provide ample 'runway' for full sentences
     if os.getenv("ANTHROPIC_API_KEY"):
         return ChatAnthropic(
             model="claude-3-5-haiku-20241022",
             temperature=0,
+            max_tokens=2048, 
         ).with_structured_output(ExtractionBundle)
+        
     if os.getenv("OPENAI_API_KEY"):
         return ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0,
+            max_tokens=2048,
         ).with_structured_output(ExtractionBundle)
+        
     return None
-
 
 def _extract_via_llm(query: str, evidence: List[Dict[str, Any]]) -> ExtractionBundle | None:
     llm = _get_extraction_llm()
     if llm is None:
         return None
+    
+    # Updated prompt to explicitly forbid half-finished thoughts
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
-                "You extract structured claims from research evidence. For each claim: set claimId (e.g. claim-1), "
-                "text (concise claim), confidence (0-1), and citations with sourceUrl and quote. "
-                "Return an ExtractionBundle with query and a list of ClaimExtraction objects.",
+                "You are a precision research assistant. Extract structured claims from the provided evidence.\n\n"
+                "STRICT RULES:\n"
+                "1. Every claim 'text' MUST be a 100% complete, grammatically correct sentence.\n"
+                "2. DO NOT truncate sentences. DO NOT end with '...'.\n"
+                "3. If a sentence from the source is cut off, use the surrounding context to finish the thought logically.\n"
+                "4. Ensure every claim ends with a period (.) or appropriate punctuation."
             ),
             ("human", "Query: {query}\n\nEvidence:\n{evidence}"),
         ]
@@ -62,31 +72,42 @@ def _extract_via_llm(query: str, evidence: List[Dict[str, Any]]) -> ExtractionBu
         result = chain.invoke({"query": query, "evidence": evidence_text})
         if result and result.claims:
             return result
-    except Exception:
+    except Exception as e:
+        print(f"Extraction failed: {e}")
         pass
     return None
 
 
 def _fallback_extract(query: str, evidence: List[Dict[str, Any]]) -> ExtractionBundle:
-    """Original loop-based extraction when LLM is unavailable or fails."""
+    """
+    High-fidelity fallback: Returns the raw evidence without stripping or 
+    truncating any words if the Cloud LLM is unavailable.
+    """
     claims: List[ClaimExtraction] = []
+    
     for index, item in enumerate(evidence):
-        text = str(item.get("summary", "")).strip()
+        # 1. Get the raw text from the 'summary' or 'content' field
+        # We NO LONGER use [:200] or any character caps here.
+        text = str(item.get("summary", item.get("content", ""))).strip()
+        
         if not text:
             continue
+
+        # 2. Build the claim using the full, unstripped text
         claims.append(
             ClaimExtraction(
                 claim_id=f"claim-{index + 1}",
-                text=text,
+                text=text, # <--- Full text returned as-is
                 confidence=float(item.get("confidence", 0.7)),
                 citations=[
                     Citation(
                         source_url=str(item.get("url", "about:blank")),
-                        quote=str(item.get("quote", text[:120])),
+                        quote=text, # <--- Full quote returned as-is
                     )
                 ],
             )
         )
+        
     return ExtractionBundle(query=query, claims=claims)
 
 

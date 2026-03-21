@@ -21,11 +21,18 @@ function bindProps(
 }
 
 export function A2UIRenderer({ components, dataModel }: A2UIRendererProps) {
+  if (!components || components.length === 0) return null;
+
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div className="flex flex-col gap-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       {components.map((component) => {
         const Component = trustedCatalog[component.component as TrustedComponentName];
-        if (!Component) return null;
+        
+        if (!Component) {
+          console.warn(`[A2UIRenderer] Component '${component.component}' not found in trusted catalog.`);
+          return null;
+        }
+        
         const props = bindProps(component, dataModel);
         return <Component key={component.id} {...props} />;
       })}
