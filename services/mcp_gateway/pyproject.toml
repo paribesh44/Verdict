@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Verdict-mcp-gateway"
+version = "0.1.0"
+description = "MCP tool gateway for Verdict"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0",
+  "uvicorn>=0.32.0",
+  "pydantic>=2.10.0",
+  "httpx>=0.28.1",
+  "python-dotenv>=1.0.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3.4"]
+
+[tool.setuptools]
+packages = ["mcp_gateway"]

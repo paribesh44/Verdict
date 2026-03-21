@@ -1,0 +1,44 @@
+{
+  "name": "Verdict",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:orchestrator\"",
+    "dev:with-mcp": "concurrently \"npm run dev:web\" \"npm run dev:orchestrator\" \"npm run dev:mcp\"",
+    "dev:web": "next dev",
+    "dev:orchestrator": "services/orchestrator/.venv/bin/uvicorn app.main:app --reload --port 8001 --app-dir services/orchestrator",
+    "dev:mcp": "services/mcp_gateway/.venv/bin/uvicorn mcp_gateway.main:app --reload --port 9001 --app-dir services/mcp_gateway",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate:contracts": "npm run generate:contracts:ts && npm run generate:contracts:py",
+    "generate:contracts:ts": "json2ts -i contracts/agui-events.schema.json -o src/lib/contracts/generated/agui-events.ts && json2ts -i contracts/a2ui-envelope.schema.json -o src/lib/contracts/generated/a2ui-envelope.ts",
+    "generate:contracts:py": "cd services/orchestrator && datamodel-codegen --input ../../contracts/agui-events.schema.json --input-file-type jsonschema --output app/contracts/generated/agui_events.py && datamodel-codegen --input ../../contracts/a2ui-envelope.schema.json --input-file-type jsonschema --output app/contracts/generated/a2ui_envelope.py"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.10.1",
+    "jsonpointer": "^5.0.1",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.1.2",
+    "eslint": "^8.57.1",
+    "json-schema-to-typescript": "^15.0.4",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
