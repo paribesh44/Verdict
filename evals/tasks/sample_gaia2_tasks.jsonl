@@ -1,0 +1,2 @@
+{"task_id":"gaia2-sample-1","query":"Identify the role of independent reviewers in agentic systems.","expected":"mentions reviewer role"}
+{"task_id":"gaia2-sample-2","query":"Summarize why schema-locked extraction matters for faithfulness.","expected":"mentions schema"}
