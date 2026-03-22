@@ -1,6 +1,6 @@
 # Verdict
 
-Verdict is a production-grade, system-centric AI scaffold that combines:
+Verdict is a system-centric AI scaffold that combines:
 
 - **LangGraph orchestration** for stateful multi-agent workflows
 - **MARS hierarchical review** (Author → Independent Reviewers → Meta-Reviewer) with node-level streaming and a visual ReasoningGraph (ReactFlow)
