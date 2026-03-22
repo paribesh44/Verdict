@@ -29,7 +29,7 @@ For architecture details, see `docs/architecture.md`.
 
 ## Quick Start
 
-### Option A: Docker Compose
+### Docker Compose
 
 From repo root:
 
@@ -43,52 +43,6 @@ This starts Redis, the orchestrator, MCP gateway, and the Next.js host. The orch
 - Orchestrator: `http://localhost:8001`
 - MCP Gateway: `http://localhost:9001`
 - Redis: `localhost:6379`
-
-### Option B: Local development
-
-#### 1) Install frontend dependencies
-
-From repo root:
-
-```bash
-npm install
-```
-
-#### 2) Create orchestrator virtual environment
-
-From repo root:
-
-```bash
-python -m venv services/orchestrator/.venv
-services/orchestrator/.venv/bin/pip install -e "services/orchestrator[dev]"
-```
-
-#### 3) Run both services
-
-From repo root:
-
-```bash
-npm run dev
-```
-
-This starts:
-
-- Next.js host at `http://localhost:3000`
-- Orchestrator API at `http://localhost:8001`
-
-Optional: set `REDIS_URL` to use Redis for approvals, trajectory, and extraction (e.g. `REDIS_URL=redis://localhost:6379`). Without it, in-memory backends are used.
-
-#### 4) (Optional) Enable real MCP tool execution
-
-From repo root:
-
-```bash
-python -m venv services/mcp_gateway/.venv
-services/mcp_gateway/.venv/bin/pip install -e "services/mcp_gateway[dev]"
-npm run dev:mcp
-```
-
-Add your API keys to the **root `.env` file** (see below). All services read from this single file.
 
 ## Environment Variables
 
