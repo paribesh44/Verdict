@@ -29,7 +29,7 @@ For architecture details, see `docs/architecture.md`.
 
 ## Quick Start
 
-### Option A: Docker Compose (recommended for production-like runs)
+### Option A: Docker Compose
 
 From repo root:
 
@@ -113,59 +113,3 @@ Add your API keys to the **root `.env` file** (see below). All services read fro
 - `FIRECRAWL_BASE_URL` (default: `https://api.firecrawl.dev`)
 - `FIRECRAWL_TIMEOUT_SECONDS` (default: `20`)
 
-## Useful Scripts
-
-From repo root:
-
-- `npm run dev` - run web + orchestrator concurrently
-- `npm run dev:with-mcp` - run web + orchestrator + MCP gateway
-- `npm run dev:web` - run Next.js only
-- `npm run dev:orchestrator` - run FastAPI orchestrator only
-- `npm run dev:mcp` - run FastAPI MCP gateway only
-- `npm run lint` - lint TypeScript/TSX sources
-- `npm run typecheck` - TypeScript type checking
-- `npm run test` - run frontend/runtime tests with Vitest
-- `npm run generate:contracts` - generate TypeScript + Python contract models from JSON schemas
-
-## Testing
-
-From repo root:
-
-```bash
-npm run test
-```
-
-From orchestrator package:
-
-```bash
-services/orchestrator/.venv/bin/python -m pytest services/orchestrator/tests
-```
-
-From MCP gateway package:
-
-```bash
-services/mcp_gateway/.venv/bin/python -m pytest services/mcp_gateway/tests
-```
-
-## API Endpoints (Orchestrator)
-
-- `GET /health` - service health check
-- `POST /v1/research/stream` - SSE stream of AG-UI events and A2UI envelopes (includes STATE_DELTA for MARS node lifecycle at `/research/graph/nodes/{node_name}`)
-- `POST /v1/approvals/{approval_id}` - approve or deny a pending sensitive action (Redis or in-memory)
-- `GET /v1/trajectory/{trace_id}` - fetch recorded reasoning trajectory steps (Redis or in-memory); used by the Session Insights drawer
-- `POST /v1/eval/audit` - run Judge LLM on a trace; body: `{ "traceId": string, "groundTruth"?: string }`; returns `faithfulness` and `answerCorrectness` (0–1)
-
-## UI Features
-
-- **ReasoningGraph** – ReactFlow diagram of the MARS topology (author → reviewer_a → reviewer_b → meta_reviewer). Subscribes to STATE_DELTA events to show running (pulse) and completed (checkmark + tokens/latency) per node.
-- **Session Insights** – Drawer that fetches `GET /v1/trajectory/{trace_id}` and displays total tokens, latency, and per-step breakdown (Tailwind-styled).
-
-## Evaluation and Audit
-
-Run the GAIA 2.0 ARE runner with audit and report generation:
-
-```bash
-python evals/gaia2_are_runner.py --tasks evals/tasks/sample_gaia2_tasks.jsonl --orchestrator-url http://localhost:8001 --audit --report evals/latest_report.md
-```
-
-With `--audit`, the runner parses the stream for `traceId`, calls `POST /v1/eval/audit` with task ground truth, aggregates Faithfulness and Answer Correctness, computes F1 for the extraction pipeline, and writes `evals/latest_report.md`.
