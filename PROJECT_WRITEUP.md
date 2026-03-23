@@ -150,8 +150,4 @@ Planned next steps include:
 Verdict demonstrates a practical path toward trustworthy, inspectable, and governable AI systems.  
 Its main contribution is not just response generation, but a structured framework for reasoning transparency, safety controls, and empirical evaluation.
 
-For faculty review, the project can be interpreted as both:
-
-- A software engineering artifact (modular, testable, extensible), and
-- A research scaffold for studying reliability and governance in agentic AI.
 
