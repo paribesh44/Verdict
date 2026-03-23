@@ -1,4 +1,4 @@
-# Verdict: Project Write-Up for Faculty Review
+# Verdict: Project Write-Up 
 
 ## 1) Project Overview
 
